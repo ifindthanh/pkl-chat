@@ -1,0 +1,77 @@
+
+<html>
+	<head>
+		<script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+		<script>
+			var socket = io.connect('http://localhost:3000', { query: "userId=123" });
+			var userName;
+			function sendMsg(){
+				var textarea = document.getElementById("msg");
+				var message = textarea.value;
+				//send to socket server
+				var data = {
+					
+					"message" : message,
+					"sender" : '123',
+					"userId" : '456'
+				};
+				socket.emit("jg-send-message", data);
+				writeMsg(message, true);
+				textarea.value = "";
+			}
+			
+			socket.on("jg-message", function(msg){
+				console.log(msg);
+				writeMsg(msg.message, false);
+			});
+			
+			socket.on("jg-message-status", function(msg){
+				console.log(msg);
+			});
+			
+			function writeMsg(msg, myOwn){
+				
+				var div = document.createElement("div");
+				div.innerHTML = msg;
+				if(myOwn){
+					div.style.textAlign = "right";
+					div.style.color = "blue";
+				}
+				document.getElementById("message-container").appendChild(div);
+			}
+			
+			function changeChanel(element){
+				console.log(element.value);
+			}
+			
+			function loadHistory (){
+				var data = {
+					"page" : 1,
+					"userId" : '456'
+				};
+				socket.emit("jg-get-history", data);
+			}
+		</script>
+	</head>
+	
+	<body>
+		<div>
+			<select onchange = "changeChanel(this)" id = "chanels">
+				<option value = "1" >Chanel 1</option>
+				<option value = "2" >Chanel 2</option>
+				<option value = "3" >Chanel 3</option>
+			</select>
+			
+			<input type = "button" onclick = "loadHistory()" value="loadhistory"/>
+		
+		</div>
+		
+		<div id = "container">
+			<div id = "message-container" style = "height:300px; overflow:atuo; width:300px; border: 1px solid blue"></div>
+			<div>
+				<textarea id = "msg" style = "margin-bottom:-5px" ></textarea>
+				<input type = "button" value = "Send" onclick = "sendMsg()" />
+			</div>
+		</div>
+	</body>
+</html>
