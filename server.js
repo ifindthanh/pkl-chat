@@ -22,43 +22,56 @@ con.connect(function(err){
 
 io.on("connection", function(socket){
 	var userId = socket.handshake.query.userId;
-	sockets[userId] = socket;
+	if (sockets[userId]) {
+		sockets[userId].push(socket);
+	} else {
+		sockets[userId] = [socket];
+	}
 	
 	
-	socket.on("jg-send-message", function(data){
+	socket.on("pkl-send-message", function(data){
 		if (!data.message) {
 			return;
 		}
 		var message = { sender: data.sender , receiver: data.userId, message: data.message, sentDate : new Date(), status: '1' };
 		
-		var receiver = sockets[data.userId];
-		if (!receiver) {
+		var receivers = sockets[data.userId];
+		
+		if (!receivers) {
 			var result_status = {
 				'status': 'ERROR',
 				'message': 'User is now offile'
 			};
-			socket.emit("jg-message-status", result_status);
+			socket.emit("pkl-message-status", result_status);
 			return;
 		}
-		var result = {
-			'userId': data.sender,
-			'message': data.message,
-			'sentDate': new Date()
+		var sendError;
+		for ( var i=0; i< receivers.length; i++) {
+			var receiver = receivers[i];
+			var result = {
+				'userId': data.sender,
+				'message': data.message,
+				'sentDate': new Date()
+			}
+			try {
+				receiver.emit("pkl-message", result);
+			} catch (err) {
+				sendError = err;
+				
+			}
 		}
-		try {
-			receiver.emit("jg-message", result);
-		} catch (err) {
+		if (sendError) {
 			var result_status = {
-				'status': 'ERROR',
-				'message': err
-			};
-			socket.emit('jg-message-status', result_status);
+					'status': 'ERROR',
+					'message': sendError
+				};
+			socket.emit('pkl-message-status', result_status);
 		}
 		var result_status = {
 			'status': 'OK',
 			'message': data.message
 		};
-		socket.emit('jg-message-status', result_status);
+		socket.emit('pkl-message-status', result_status);
 		con.query('INSERT INTO message SET ?', message, function(err){
 			if(err) {
 				var result = {
@@ -66,13 +79,13 @@ io.on("connection", function(socket){
 				'message': err
 				}
 				error = true;
-				socket.emit("jg-message-status", result);
+				socket.emit("pkl-message-status", result);
 			}
 
 		});
 	});
 
-	socket.on("jg-get-history", function(data){
+	socket.on("pkl-get-history", function(data){
 		if (data.page) {
 			sql = 'SELECT * FROM message WHERE sender = '+data.userId+' OR receiver = '+data.userId+' ORDER BY ID LIMIT '+data.page*10+',10';
 		} else {
@@ -84,7 +97,7 @@ io.on("connection", function(socket){
 				'status': 'ERROR',
 				'message': err
 				}
-				socket.emit("jg-history", result);
+				socket.emit("pkl-history", result);
 				return;
 			}
 			
@@ -94,14 +107,14 @@ io.on("connection", function(socket){
 				'history': rows
 			}
 			try {
-				socket.emit("jg-history", result);
+				socket.emit("pkl-history", result);
 				console.log(rows);
 			} catch (err) {
 				var result = {
 				'status': 'ERROR',
 				'message': err
 				}
-				socket.emit("jg-history", result);
+				socket.emit("pkl-history", result);
 				return;
 			}
 			
