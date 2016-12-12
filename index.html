@@ -1,4 +1,3 @@
-
 <html>
 	<head>
 		<script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
@@ -15,17 +14,17 @@
 					"sender" : '123',
 					"userId" : '456'
 				};
-				socket.emit("jg-send-message", data);
+				socket.emit("pkl-send-message", data);
 				writeMsg(message, true);
 				textarea.value = "";
 			}
 			
-			socket.on("jg-message", function(msg){
+			socket.on("pkl-message", function(msg){
 				console.log(msg);
 				writeMsg(msg.message, false);
 			});
 			
-			socket.on("jg-message-status", function(msg){
+			socket.on("pkl-message-status", function(msg){
 				console.log(msg);
 			});
 			
@@ -49,7 +48,7 @@
 					"page" : 1,
 					"userId" : '456'
 				};
-				socket.emit("jg-get-history", data);
+				socket.emit("pkl-get-history", data);
 			}
 		</script>
 	</head>
